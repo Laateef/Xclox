@@ -81,7 +81,7 @@ private:
                 }
                 m_timer.cancel();
                 m_callback(m_endpoint, error, bytes ? m_buffer.data() : nullptr, bytes);
-                if (postCallback) {
+                if (!error && postCallback) {
                     postCallback();
                 }
             });

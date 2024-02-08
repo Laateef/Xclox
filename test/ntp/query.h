@@ -133,7 +133,7 @@ TEST_SUITE("Query")
     TEST_CASE_FIXTURE(Context, "timeout - lookup" * doctest::timeout(11))
     {
         const auto& start = steady_clock::now();
-        const std::string& host = "12345";
+        const std::string& host = "1234567890";
         const auto& timeoutMs = 100;
         auto query = Query::start(pool, host, queryTracer.callable(), milliseconds(timeoutMs));
         CHECK_FALSE(query.expired());
@@ -166,7 +166,7 @@ TEST_SUITE("Query")
     TEST_CASE_FIXTURE(Context, "cancellable during lookup" * doctest::timeout(11))
     {
         const auto& start = steady_clock::now();
-        const std::string& host = "12345";
+        const std::string& host = "1234567890";
         auto query = Query::start(pool, host, queryTracer.callable());
         CHECK_FALSE(query.expired());
         query.lock()->cancel();

@@ -1,11 +1,14 @@
 # Xclox
 
-[![build](https://github.com/laateef/xclox/workflows/.github/workflows/ci.yml/badge.svg)](https://github.com/laateef/xclox/actions)
+[![build](https://github.com/Laateef/Xclox/actions/workflows/ci.yml/badge.svg)](https://github.com/Laateef/Xclox/actions)
 [![license](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A header-only cross-platform date and time library for C++.
+
 It offers a high-level approach to creating, manipulating, and formatting times, dates, and datetimes.
+
 It provides a flexible and advanced NTP client for querying internet time in an asynchronous fashion based on the ASIO library.
+
 It has been thoroughly tested, as its development has been test-driven (TDD).
 
 ## Usage

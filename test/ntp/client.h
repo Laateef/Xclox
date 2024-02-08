@@ -39,7 +39,7 @@ TEST_SUITE("Client")
         Server server1, server2, server3, server4, server5;
     };
 
-    TEST_CASE_FIXTURE(Context, "query" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "query" * doctest::timeout(5))
     {
         Client client(clientTracer.callable());
         client.query("x.y");
@@ -47,7 +47,7 @@ TEST_SUITE("Client")
         client.query("time.cloudflare.com");
         client.query("time.facebook.com");
         client.query("time.apple.com");
-        CHECK(clientTracer.wait(5) == 5);
+        CHECK(clientTracer.wait(5, seconds(4)) == 5);
         CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
             return name == "x.y" && address == "" && status == Client::Status::ResolveError && packet.isNull() && rtt == seconds(0);
         }) == 1);
@@ -114,7 +114,7 @@ TEST_SUITE("Client")
         client.cancel();
         server1.replay(nullptr, 0, milliseconds(100));
         client.query(host);
-        CHECK(serverTracer1.wait() == 1);
+        CHECK(serverTracer1.wait(1) == 1);
         client.cancel();
         client.query("255.255.255.255");
         CHECK(clientTracer.wait(2) == 2);
@@ -134,19 +134,20 @@ TEST_SUITE("Client")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "cancel queries concurrently" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "cancel queries concurrently" * doctest::timeout(5))
     {
-        Client client(clientTracer.callable());
         std::vector<Server*> serverList { &server1, &server2, &server3, &server4, &server5 };
+        const size_t ServerCount = serverList.size();
+        const size_t CancelCount = 99;
+        Client client(clientTracer.callable());
         asio::thread_pool pool;
-        const size_t QueryCount = serverList.size();
-        for (size_t j = 0; j < QueryCount; ++j) {
-            for (size_t i = 0; i < QueryCount; ++i) {
+        for (size_t j = 0; j < CancelCount; ++j) {
+            for (size_t i = 0; i < ServerCount; ++i) {
                 serverList.at(i)->replay();
-                client.query(stringify(serverList.at(i)->endpoint()), milliseconds(0));
+                client.query(stringify(serverList.at(i)->endpoint()), milliseconds(i));
                 asio::post(pool, [&] { client.cancel(); });
             }
-            CHECK(clientTracer.wait(QueryCount) == QueryCount);
+            CHECK(clientTracer.wait(ServerCount) == ServerCount);
             clientTracer.reset();
         }
     }
@@ -170,7 +171,7 @@ TEST_SUITE("Client")
             server1.receive();
             Client client(clientTracer.callable());
             client.query(host, milliseconds(i * 100));
-            CHECK(clientTracer.wait(1) == 1);
+            CHECK(clientTracer.wait() == 1);
             CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
                 return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
             }) == 1);

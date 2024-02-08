@@ -224,7 +224,7 @@ TEST_SUITE("Server")
         CHECK(io.run() == 2);
         CHECK(senderEndpoint == server.endpoint());
         CHECK(recvData == sendData);
-        CHECK(tracer.wait() == 2);
+        CHECK(tracer.wait(2) == 2);
         CHECK(tracer.find([&](const asio::ip::udp::endpoint& endpoint,
                               const asio::error_code& error,
                               const uint8_t* data,
@@ -265,7 +265,7 @@ TEST_SUITE("Server")
         CHECK(abs(duration_cast<milliseconds>(recvTime - sendTime).count() - 100) < 50);
         CHECK(senderEndpoint.port() == server.endpoint().port());
         CHECK(recvData == custData);
-        CHECK(tracer.wait() == 2);
+        CHECK(tracer.wait(2) == 2);
         CHECK(tracer.find([&](const asio::ip::udp::endpoint& endpoint,
                               const asio::error_code& error,
                               const uint8_t* data,
@@ -278,6 +278,37 @@ TEST_SUITE("Server")
                               size_t size) {
             return endpoint == socket.local_endpoint() && !error && std::memcmp(data, custData.data(), custData.size()) == 0 && size == custData.size();
         }) == 1);
+    }
+
+    TEST_CASE_FIXTURE(Context, "replay resets upon each call")
+    {
+        const size_t Count = 9;
+        for (size_t i = 0; i < Count; ++i) {
+            server.replay();
+        }
+        CHECK(tracer.wait(Count - 1) == Count - 1);
+        CHECK(tracer.find([&](const asio::ip::udp::endpoint& endpoint,
+                              const asio::error_code& error,
+                              const uint8_t* data,
+                              size_t size) {
+            return endpoint == asio::ip::udp::endpoint() && error == asio::error::operation_aborted && data == nullptr && size == 0;
+        }) == Count - 1);
+        std::array<uint8_t, 9> recvData;
+        asio::ip::udp::endpoint senderEndpoint;
+        socket.async_receive_from(asio::buffer(recvData), senderEndpoint, [](const asio::error_code&, std::size_t) {});
+        std::array<uint8_t, 9> sendData;
+        sendData.fill(9);
+        socket.async_send_to(asio::buffer(sendData), server.endpoint(), [](const asio::error_code&, std::size_t) {});
+        CHECK(io.run() == 2);
+        CHECK(senderEndpoint == server.endpoint());
+        CHECK(recvData == sendData);
+        CHECK(tracer.wait(Count + 1) == Count + 1);
+        CHECK(tracer.find([&](const asio::ip::udp::endpoint& endpoint,
+                              const asio::error_code& error,
+                              const uint8_t* data,
+                              size_t size) {
+            return endpoint == socket.local_endpoint() && !error && std::memcmp(data, sendData.data(), sendData.size()) == 0 && size == sendData.size();
+        }) == 2);
     }
 
     TEST_CASE_FIXTURE(Context, "loop")
