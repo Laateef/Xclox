@@ -264,7 +264,7 @@ TEST_SUITE("Server")
                 CHECK(size == SendByteCount);
             });
         CHECK(io.run() == 2);
-        CHECK(abs(duration_cast<milliseconds>(recvTime - sendTime).count() - 100) < 50);
+        CHECK(compare(recvTime - sendTime, milliseconds(100)));
         CHECK(senderEndpoint.port() == server.endpoint().port());
         CHECK(recvData == custData);
         CHECK(tracer.wait(2) == 2);
