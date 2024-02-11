@@ -5,24 +5,18 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
 
+#include "xclox/ntp/query.hpp"
+
 #include "tools/server.hpp"
 #include "tools/tracer.hpp"
-#include "xclox/ntp/query.hpp"
+
+#include "tools/helper.hpp"
 
 using namespace xclox::ntp;
 using namespace std::chrono;
 
 TEST_SUITE("Query")
 {
-    const auto& MaximumTolerableTime = milliseconds(100);
-    auto stringify = [](const asio::ip::udp::endpoint& endpoint) {
-        std::stringstream ss;
-        ss << endpoint;
-        return ss.str();
-    };
-    auto isServerPacket = [](const Packet& packet) {
-        return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
-    };
     struct Context {
         Context()
             : server1(32101, serverTracer1.callable())
@@ -54,7 +48,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host + ":123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
+            return name == host && address == host + ":123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && compare(rtt, milliseconds(1));
         }) == 1);
     }
 
@@ -66,7 +60,7 @@ TEST_SUITE("Query")
             Query::start(pool, host, queryTracer.callable());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-                return name == host && address == "255.255.255.255:123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
+                return name == host && address == "255.255.255.255:123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && compare(rtt, milliseconds(1));
             }) == 1);
         }
         SUBCASE("number")
@@ -75,7 +69,7 @@ TEST_SUITE("Query")
             Query::start(pool, host, queryTracer.callable());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-                return name == host && address == host && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
+                return name == host && address == host && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && compare(rtt, milliseconds(1));
             }) == 1);
         }
     }
@@ -88,7 +82,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::ReceiveError && packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
+            return name == host && address == host && status == Query::Status::ReceiveError && packet.isNull() && rtt > nanoseconds(0) && compare(rtt, milliseconds(1));
         }) == 1);
     }
 
@@ -99,7 +93,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 100) < MaximumTolerableTime.count();
+            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && compare(rtt, milliseconds(100));
         }) == 1);
     }
 
@@ -109,10 +103,10 @@ TEST_SUITE("Query")
         const std::string& host = stringify(server1.endpoint());
         const auto& start = steady_clock::now();
         Query::start(pool, host, queryTracer.callable());
-        CHECK(steady_clock::now() - start < MaximumTolerableTime);
+        CHECK(compare(start, milliseconds(1)));
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 200) < MaximumTolerableTime.count();
+            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && compare(rtt, milliseconds(200));
         }) == 1);
     }
 
@@ -143,7 +137,7 @@ TEST_SUITE("Query")
             return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
         }) == 1);
         CHECK(query.expired());
-        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - timeoutMs) < MaximumTolerableTime.count());
+        CHECK(compare(start, milliseconds(timeoutMs)));
     }
 
     TEST_CASE_FIXTURE(Context, "timeout - query" * doctest::timeout(1))
@@ -158,7 +152,7 @@ TEST_SUITE("Query")
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
                 return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
             }) == 1);
-            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < MaximumTolerableTime.count());
+            CHECK(compare(start, milliseconds(i * 100)));
             CHECK(query.expired());
             queryTracer.reset();
         }
@@ -176,13 +170,13 @@ TEST_SUITE("Query")
             return name == host && address == "" && status == Query::Status::Cancelled && packet.isNull() && rtt == seconds(0);
         }) == 1);
         CHECK(query.expired());
-        CHECK(steady_clock::now() - start < MaximumTolerableTime);
+        CHECK(compare(start, milliseconds(1)));
     }
 
     TEST_CASE_FIXTURE(Context, "cancellable during query - multiple times" * doctest::timeout(1))
     {
         const auto& start = steady_clock::now();
-        server1.replay(nullptr, 0, milliseconds(100));
+        server1.replay(nullptr, 0, milliseconds(200));
         const std::string& host = stringify(server1.endpoint());
         auto query = Query::start(pool, host, queryTracer.callable());
         CHECK(serverTracer1.wait() == 1);
@@ -200,11 +194,11 @@ TEST_SUITE("Query")
             return name == host && address == "" && status == Query::Status::Cancelled && packet.isNull() && rtt == seconds(0);
         }) == 1);
         // The query lasts a bit before it expires on Linux
-        std::this_thread::sleep_for(milliseconds(50));
+        std::this_thread::sleep_for(milliseconds(100));
         CHECK(query.expired());
         CHECK(serverTracer1.counter() == 1);
         CHECK(serverTracer1.wait(2) == 2);
-        CHECK(steady_clock::now() - start < milliseconds(100) + MaximumTolerableTime);
+        CHECK(compare(start, milliseconds(200)));
     }
 
     TEST_CASE_FIXTURE(Context, "cancellable concurrently" * doctest::timeout(1))

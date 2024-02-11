@@ -7,6 +7,8 @@
 
 #include "xclox/ntp/timestamp.hpp"
 
+#include "tools/helper.hpp"
+
 using namespace xclox::ntp;
 using namespace std::chrono;
 

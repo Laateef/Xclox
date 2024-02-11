@@ -7,6 +7,8 @@
 
 #include "tools/tracer.hpp"
 
+#include "tools/helper.hpp"
+
 using namespace std::chrono;
 
 TEST_SUITE("Tracer")
@@ -37,13 +39,13 @@ TEST_SUITE("Tracer")
 
     TEST_CASE("wait returns as soon as it finds a match")
     {
-        const auto& testCaseStart = steady_clock::now();
+        const auto& start = steady_clock::now();
         SUBCASE("immediately")
         {
             Tracer<> t;
             t.callable()();
             CHECK(t.wait() == 1);
-            CHECK(steady_clock::now() - testCaseStart < milliseconds(100));
+            CHECK(compare(start, milliseconds(1)));
         }
         SUBCASE("after a while")
         {
@@ -53,28 +55,27 @@ TEST_SUITE("Tracer")
                 t.callable()();
             }).detach();
             CHECK(t.wait() == 1);
-            CHECK(steady_clock::now() - testCaseStart < milliseconds(200));
+            CHECK(compare(start, milliseconds(100)));
         }
     }
 
     TEST_CASE("wait gives up after 1 second")
     {
-        const auto& testCaseStart = steady_clock::now();
+        const auto& start = steady_clock::now();
         Tracer<> t;
         std::thread([&] {
             std::this_thread::sleep_for(milliseconds(1100));
             t.callable()();
         }).detach();
         CHECK(t.wait() == 0);
-        CHECK(steady_clock::now() - testCaseStart > milliseconds(1000));
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(1100));
+        CHECK(compare(start, milliseconds(1000)));
         CHECK(t.wait() == 1);
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(1200));
+        CHECK(compare(start, milliseconds(1100)));
     }
 
     TEST_CASE("wait for multiple calls")
     {
-        const auto& testCaseStart = steady_clock::now();
+        const auto& start = steady_clock::now();
         Tracer<> t;
         std::thread([&] {
             std::this_thread::sleep_for(milliseconds(100));
@@ -85,13 +86,12 @@ TEST_SUITE("Tracer")
             t.callable()();
         }).detach();
         CHECK(t.wait(3) == 3);
-        CHECK(steady_clock::now() - testCaseStart > milliseconds(300));
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(400));
+        CHECK(compare(start, milliseconds(300)));
     }
 
     TEST_CASE("wait returns as soon as it finds bigger counts")
     {
-        const auto& testCaseStart = steady_clock::now();
+        const auto& start = steady_clock::now();
         Tracer<> t;
         std::thread([&] {
             t.callable()();
@@ -100,26 +100,28 @@ TEST_SUITE("Tracer")
         }).detach();
         std::this_thread::sleep_for(milliseconds(100));
         CHECK(t.wait(2) == 3);
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(200));
+        CHECK(compare(start, milliseconds(100)));
     }
 
-    TEST_CASE("wait up to a given number of seconds")
+    TEST_CASE("wait up to a given duration")
     {
-        const auto& testCaseStart = steady_clock::now();
+        const auto& start = steady_clock::now();
         Tracer<> t;
         t.callable()();
         CHECK(t.wait(1, seconds(0)) == 1);
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(100));
+        CHECK(compare(start, milliseconds(1)));
         std::thread([&] {
             std::this_thread::sleep_for(milliseconds(100));
             t.callable()();
             std::this_thread::sleep_for(milliseconds(100));
             t.callable()();
         }).detach();
-        CHECK(t.wait(2, milliseconds(200)) == 2);
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(1100));
-        CHECK(t.wait(3, milliseconds(400)) == 3);
-        CHECK(steady_clock::now() - testCaseStart < milliseconds(2100));
+        CHECK(t.wait(2, milliseconds(50)) == 1);
+        CHECK(compare(start, milliseconds(50)));
+        CHECK(t.wait(3, milliseconds(100)) == 2);
+        CHECK(compare(start, milliseconds(150)));
+        CHECK(t.wait(3, milliseconds(100)) == 3);
+        CHECK(compare(start, milliseconds(200)));
     }
 
     TEST_CASE("parameterizable callbacks")

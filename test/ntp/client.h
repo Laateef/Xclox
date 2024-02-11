@@ -5,26 +5,18 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
 
+#include "xclox/ntp/client.hpp"
+
 #include "tools/server.hpp"
 #include "tools/tracer.hpp"
-#include "xclox/ntp/client.hpp"
+
+#include "tools/helper.hpp"
 
 using namespace xclox::ntp;
 using namespace std::chrono;
 
 TEST_SUITE("Client")
 {
-    auto isClientPacket = [](const Packet& packet) {
-        return packet.version() == 4 && packet.mode() == 3 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
-    };
-    auto isServerPacket = [](const Packet& packet) {
-        return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
-    };
-    auto stringify = [](const asio::ip::udp::endpoint& endpoint) {
-        std::stringstream ss;
-        ss << endpoint;
-        return ss.str();
-    };
     struct Context {
         Context()
             : server1(32101, serverTracer1.callable())
@@ -151,7 +143,7 @@ TEST_SUITE("Client")
         Client(clientTracer.callable()).query(host);
         CHECK(clientTracer.wait() == 1);
         CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::Succeeded && isClientPacket(packet) && rtt < milliseconds(100);
+            return name == host && address == host && status == Query::Status::Succeeded && isClientPacket(packet) && compare(rtt, milliseconds(50));
         }) == 1);
     }
 
@@ -167,7 +159,7 @@ TEST_SUITE("Client")
             CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
                 return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
             }) == 1);
-            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < 50);
+            CHECK(compare(start, milliseconds(i * 100)));
             clientTracer.reset();
         }
     }

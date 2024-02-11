@@ -7,6 +7,8 @@
 
 #include "xclox/ntp/packet.hpp"
 
+#include "tools/helper.hpp"
+
 #include <functional>
 #include <map>
 

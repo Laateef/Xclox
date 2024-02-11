@@ -6,7 +6,10 @@
  */
 
 #include "tools/server.hpp"
+
 #include "tools/tracer.hpp"
+
+#include "tools/helper.hpp"
 
 using namespace std::chrono;
 
@@ -127,7 +130,6 @@ TEST_SUITE("Server")
 
     TEST_CASE_FIXTURE(Context, "send fails")
     {
-        const auto& broadcastEndpoint = asio::ip::udp::endpoint(asio::ip::make_address("255.255.255.255"), 123);
         uint8_t sendData = 1;
         server.send(broadcastEndpoint, &sendData, 1);
         CHECK(tracer.wait() == 1);
