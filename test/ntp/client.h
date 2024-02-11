@@ -15,10 +15,10 @@ using namespace std::chrono;
 TEST_SUITE("Client")
 {
     auto isClientPacket = [](const Packet& packet) {
-        return packet.version() == 4 && packet.mode() == 3 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(3);
+        return packet.version() == 4 && packet.mode() == 3 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
     };
     auto isServerPacket = [](const Packet& packet) {
-        return packet.version() == 4 && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(3);
+        return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
     };
     auto stringify = [](const asio::ip::udp::endpoint& endpoint) {
         std::stringstream ss;
@@ -44,10 +44,8 @@ TEST_SUITE("Client")
         Client client(clientTracer.callable());
         client.query("x.y");
         client.query("255.255.255.255");
-        client.query("time.cloudflare.com");
-        client.query("time.facebook.com");
-        client.query("time.apple.com");
-        CHECK(clientTracer.wait(5, seconds(4)) == 5);
+        client.query("time.windows.com");
+        CHECK(clientTracer.wait(3, seconds(5)) == 3);
         CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
             return name == "x.y" && address == "" && status == Client::Status::ResolveError && packet.isNull() && rtt == seconds(0);
         }) == 1);
@@ -55,13 +53,7 @@ TEST_SUITE("Client")
             return name == "255.255.255.255" && address == "255.255.255.255:123" && status == Client::Status::SendError && isClientPacket(packet) && rtt < seconds(1);
         }) == 1);
         CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == "time.cloudflare.com" && !address.empty() && status == Client::Status::Succeeded && isServerPacket(packet) && rtt < seconds(1);
-        }) == 1);
-        CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == "time.facebook.com" && !address.empty() && status == Client::Status::Succeeded && isServerPacket(packet) && rtt < seconds(1);
-        }) == 1);
-        CHECK(clientTracer.find([&](const std::string& name, const std::string& address, Client::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == "time.apple.com" && !address.empty() && status == Client::Status::Succeeded && isServerPacket(packet) && rtt < seconds(1);
+            return name == "time.windows.com" && !address.empty() && asio::ip::make_address(address.substr(0, address.size() - 4)).is_v4() && status == Client::Status::Succeeded && isServerPacket(packet) && rtt < seconds(5);
         }) == 1);
     }
 

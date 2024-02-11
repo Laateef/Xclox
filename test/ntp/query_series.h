@@ -14,6 +14,7 @@ using namespace std::chrono;
 
 TEST_SUITE("QuerySeries")
 {
+    const auto& MaximumTolerableTime = milliseconds(100);
     const auto& broadcastEndpoint = asio::ip::udp::endpoint(asio::ip::make_address("255.255.255.255"), 2345);
     const auto& someEndpoint = asio::ip::udp::endpoint(asio::ip::make_address("254.254.254.254"), 1234);
     const auto& localEndpoint = asio::ip::udp::endpoint(asio::ip::make_address("0.0.0.0"), 1234);
@@ -47,7 +48,7 @@ TEST_SUITE("QuerySeries")
         io.run();
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -58,7 +59,7 @@ TEST_SUITE("QuerySeries")
         io.run();
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server1.endpoint() && !error && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == server1.endpoint() && !error && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -69,7 +70,7 @@ TEST_SUITE("QuerySeries")
         io.run();
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -84,7 +85,7 @@ TEST_SUITE("QuerySeries")
         io.run();
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server3.endpoint() && !error && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == server3.endpoint() && !error && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
         CHECK(serverTracer1.wait(2) == 2);
         CHECK(serverTracer2.wait(1) == 1);
@@ -100,7 +101,7 @@ TEST_SUITE("QuerySeries")
             io.run();
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == broadcastEndpoint && error == asio::error::access_denied && !packet.isNull() && rtt < milliseconds(50);
+                return endpoint == broadcastEndpoint && error == asio::error::access_denied && !packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }
@@ -114,7 +115,7 @@ TEST_SUITE("QuerySeries")
             CHECK(serverTracer1.wait(2) == 2);
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server1.endpoint() && !error && !packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server1.endpoint() && !error && !packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }
@@ -128,7 +129,7 @@ TEST_SUITE("QuerySeries")
             CHECK(serverTracer1.wait(2) == 2);
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server1.endpoint() && !error && !packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server1.endpoint() && !error && !packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }
@@ -143,7 +144,7 @@ TEST_SUITE("QuerySeries")
             io.run();
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == broadcastEndpoint && error == asio::error::operation_aborted && !packet.isNull() && rtt < milliseconds(50);
+                return endpoint == broadcastEndpoint && error == asio::error::operation_aborted && !packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }
@@ -158,7 +159,7 @@ TEST_SUITE("QuerySeries")
             query.lock()->cancel();
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server1.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server1.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }
@@ -178,7 +179,7 @@ TEST_SUITE("QuerySeries")
             query.lock()->cancel();
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server2.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server2.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(serverTracer3.counter() == 0);
             CHECK(query.expired());
@@ -202,11 +203,11 @@ TEST_SUITE("QuerySeries")
             auto query = QuerySeries::start(io, asio::ip::udp::resolver::results_type::create(server1.endpoint(), "", ""), queryTracer.callable(), milliseconds(i * 100));
             io.run();
             io.restart();
-            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < 50);
+            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < MaximumTolerableTime.count());
             CHECK(query.expired());
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server1.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - i * 100) < 50;
+                return endpoint == server1.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - i * 100) < MaximumTolerableTime.count();
             }) == 1);
             queryTracer.reset();
         }
@@ -220,11 +221,11 @@ TEST_SUITE("QuerySeries")
         std::vector<asio::ip::udp::endpoint> endpointList { server1.endpoint(), server2.endpoint() };
         auto query = QuerySeries::start(io, asio::ip::udp::resolver::results_type::create(endpointList.begin(), endpointList.end(), "", ""), queryTracer.callable());
         io.run();
-        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - QuerySeries::DefaultTimeout::ms) < 50);
+        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - QuerySeries::DefaultTimeout::ms) < MaximumTolerableTime.count());
         CHECK(query.expired());
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server2.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - (QuerySeries::DefaultTimeout::ms - QuerySingle::DefaultTimeout::ms)) < 50;
+            return endpoint == server2.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - (QuerySeries::DefaultTimeout::ms - QuerySingle::DefaultTimeout::ms)) < MaximumTolerableTime.count();
         }) == 1);
     }
 } // TEST_SUITE

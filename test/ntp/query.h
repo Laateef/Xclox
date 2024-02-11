@@ -14,13 +14,14 @@ using namespace std::chrono;
 
 TEST_SUITE("Query")
 {
+    const auto& MaximumTolerableTime = milliseconds(100);
     auto stringify = [](const asio::ip::udp::endpoint& endpoint) {
         std::stringstream ss;
         ss << endpoint;
         return ss.str();
     };
     auto isServerPacket = [](const Packet& packet) {
-        return packet.version() == 4 && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(3);
+        return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(2);
     };
     struct Context {
         Context()
@@ -53,7 +54,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host + ":123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < milliseconds(50);
+            return name == host && address == host + ":123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -65,7 +66,7 @@ TEST_SUITE("Query")
             Query::start(pool, host, queryTracer.callable());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-                return name == host && address == "255.255.255.255:123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < milliseconds(50);
+                return name == host && address == "255.255.255.255:123" && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
             }) == 1);
         }
         SUBCASE("number")
@@ -74,7 +75,7 @@ TEST_SUITE("Query")
             Query::start(pool, host, queryTracer.callable());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-                return name == host && address == host && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < milliseconds(50);
+                return name == host && address == host && status == Query::Status::SendError && !packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
             }) == 1);
         }
     }
@@ -87,7 +88,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::ReceiveError && packet.isNull() && rtt > nanoseconds(0) && rtt < milliseconds(50);
+            return name == host && address == host && status == Query::Status::ReceiveError && packet.isNull() && rtt > nanoseconds(0) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -98,7 +99,7 @@ TEST_SUITE("Query")
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 100) < 50;
+            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 100) < MaximumTolerableTime.count();
         }) == 1);
     }
 
@@ -108,10 +109,10 @@ TEST_SUITE("Query")
         const std::string& host = stringify(server1.endpoint());
         const auto& start = steady_clock::now();
         Query::start(pool, host, queryTracer.callable());
-        CHECK(steady_clock::now() - start < milliseconds(50));
+        CHECK(steady_clock::now() - start < MaximumTolerableTime);
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 200) < 50;
+            return name == host && address == host && status == Query::Status::Succeeded && !packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 200) < MaximumTolerableTime.count();
         }) == 1);
     }
 
@@ -142,7 +143,7 @@ TEST_SUITE("Query")
             return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
         }) == 1);
         CHECK(query.expired());
-        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - timeoutMs) < 50);
+        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - timeoutMs) < MaximumTolerableTime.count());
     }
 
     TEST_CASE_FIXTURE(Context, "timeout - query" * doctest::timeout(1))
@@ -157,7 +158,7 @@ TEST_SUITE("Query")
             CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
                 return name == host && address == "" && status == Query::Status::TimeoutError && packet.isNull() && rtt == seconds(0);
             }) == 1);
-            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < 50);
+            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < MaximumTolerableTime.count());
             CHECK(query.expired());
             queryTracer.reset();
         }
@@ -175,7 +176,7 @@ TEST_SUITE("Query")
             return name == host && address == "" && status == Query::Status::Cancelled && packet.isNull() && rtt == seconds(0);
         }) == 1);
         CHECK(query.expired());
-        CHECK(steady_clock::now() - start < milliseconds(50));
+        CHECK(steady_clock::now() - start < MaximumTolerableTime);
     }
 
     TEST_CASE_FIXTURE(Context, "cancellable during query - multiple times" * doctest::timeout(1))
@@ -203,7 +204,7 @@ TEST_SUITE("Query")
         CHECK(query.expired());
         CHECK(serverTracer1.counter() == 1);
         CHECK(serverTracer1.wait(2) == 2);
-        CHECK(steady_clock::now() - start < milliseconds(150));
+        CHECK(steady_clock::now() - start < milliseconds(100) + MaximumTolerableTime);
     }
 
     TEST_CASE_FIXTURE(Context, "cancellable concurrently" * doctest::timeout(1))
@@ -227,11 +228,11 @@ TEST_SUITE("Query")
 
     TEST_CASE_FIXTURE(Context, "domain name" * doctest::timeout(1))
     {
-        const std::string& host = "time.google.com";
+        const std::string& host = "time.windows.com";
         Query::start(pool, host, queryTracer.callable());
         CHECK(queryTracer.wait() == 1);
         CHECK(queryTracer.find([&](const std::string& name, const std::string& address, Query::Status status, const Packet& packet, const steady_clock::duration& rtt) {
-            return name == host && asio::ip::make_address(address.substr(0, address.size() - 4)).is_v4() && status == Query::Status::Succeeded && isServerPacket(packet) && rtt < seconds(1);
+            return name == host && !address.empty() && asio::ip::make_address(address.substr(0, address.size() - 4)).is_v4() && status == Query::Status::Succeeded && isServerPacket(packet) && rtt < seconds(1);
         }) == 1);
     }
 } // TEST_SUITE

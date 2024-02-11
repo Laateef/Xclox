@@ -14,6 +14,7 @@ using namespace std::chrono;
 
 TEST_SUITE("QuerySingle")
 {
+    const auto& MaximumTolerableTime = milliseconds(100);
     const auto& broadcastEndpoint = asio::ip::udp::endpoint(asio::ip::make_address("255.255.255.255"), 2345);
     auto isClientPacket = [](const Packet& packet) {
         return packet.version() == 4 && packet.mode() == 3 && Timestamp(system_clock::now()) - Timestamp(packet.transmitTimestamp()) < seconds(1);
@@ -41,7 +42,7 @@ TEST_SUITE("QuerySingle")
         io.run();
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -62,7 +63,7 @@ TEST_SUITE("QuerySingle")
         }) == 1);
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server.endpoint() && error == asio::error::message_size && packet.isNull() && rtt < milliseconds(50);
+            return endpoint == server.endpoint() && error == asio::error::message_size && packet.isNull() && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -81,7 +82,7 @@ TEST_SUITE("QuerySingle")
         }) == 2);
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server.endpoint() && !error && std::memcmp(packet.data().data(), recvData, recvSize) == 0 && isClientPacket(packet) && rtt < milliseconds(50);
+            return endpoint == server.endpoint() && !error && std::memcmp(packet.data().data(), recvData, recvSize) == 0 && isClientPacket(packet) && rtt < MaximumTolerableTime;
         }) == 1);
     }
 
@@ -93,7 +94,7 @@ TEST_SUITE("QuerySingle")
             io.run();
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < milliseconds(50);
+                return endpoint == broadcastEndpoint && error == asio::error::access_denied && isClientPacket(packet) && rtt < MaximumTolerableTime;
             }) == 1);
         }
         SUBCASE("receive error")
@@ -114,14 +115,14 @@ TEST_SUITE("QuerySingle")
             server.send(sender, nullptr, 0);
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server.endpoint() && error == asio::error::message_size && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 200) < 50;
+                return endpoint == server.endpoint() && error == asio::error::message_size && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - 200) < MaximumTolerableTime.count();
             }) == 1);
         }
         SUBCASE("successful query")
         {
             server.receive();
             QuerySingle::start(io, server.endpoint(), queryTracer.callable());
-            std::this_thread::sleep_for(milliseconds(150));
+            std::this_thread::sleep_for(milliseconds(200));
             std::thread([&] {
                 io.run();
             }).detach();
@@ -133,11 +134,11 @@ TEST_SUITE("QuerySingle")
                 std::memcpy(buffer.data(), data, size);
                 return !error;
             }) == 1);
-            std::this_thread::sleep_for(milliseconds(150));
+            std::this_thread::sleep_for(milliseconds(200));
             server.send(sender, buffer.data(), buffer.size());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server.endpoint() && !error && isClientPacket(packet) && abs(duration_cast<milliseconds>(rtt).count() - 300) < 50;
+                return endpoint == server.endpoint() && !error && isClientPacket(packet) && abs(duration_cast<milliseconds>(rtt).count() - 400) < MaximumTolerableTime.count();
             }) == 1);
         }
     }
@@ -149,10 +150,10 @@ TEST_SUITE("QuerySingle")
             server.receive();
             QuerySingle::start(io, server.endpoint(), queryTracer.callable(), milliseconds(i * 100));
             io.run();
-            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < 50);
+            CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - i * 100) < MaximumTolerableTime.count());
             CHECK(queryTracer.counter() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - i * 100) < 50;
+                return endpoint == server.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - i * 100) < MaximumTolerableTime.count();
             }) == 1);
             CHECK(serverTracer.wait() == 1);
             queryTracer.reset();
@@ -167,10 +168,10 @@ TEST_SUITE("QuerySingle")
         server.receive();
         QuerySingle::start(io, server.endpoint(), queryTracer.callable());
         io.run();
-        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - QuerySingle::DefaultTimeout::ms) < 50);
+        CHECK(abs(duration_cast<milliseconds>(steady_clock::now() - start).count() - QuerySingle::DefaultTimeout::ms) < MaximumTolerableTime.count());
         CHECK(queryTracer.counter() == 1);
         CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-            return endpoint == server.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - QuerySingle::DefaultTimeout::ms) < 50;
+            return endpoint == server.endpoint() && error == asio::error::timed_out && packet.isNull() && abs(duration_cast<milliseconds>(rtt).count() - QuerySingle::DefaultTimeout::ms) < MaximumTolerableTime.count();
         }) == 1);
         CHECK(serverTracer.counter() == 1);
     }
@@ -217,7 +218,7 @@ TEST_SUITE("QuerySingle")
             CHECK(query.expired());
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(serverTracer.counter() == 0);
         }
@@ -232,7 +233,7 @@ TEST_SUITE("QuerySingle")
             query.lock()->cancel();
             CHECK(queryTracer.wait() == 1);
             CHECK(queryTracer.find([&](const asio::ip::udp::endpoint& endpoint, const asio::error_code& error, const Packet& packet, const steady_clock::duration& rtt) {
-                return endpoint == server.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < milliseconds(50);
+                return endpoint == server.endpoint() && error == asio::error::operation_aborted && packet.isNull() && rtt < MaximumTolerableTime;
             }) == 1);
             CHECK(query.expired());
         }

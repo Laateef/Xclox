@@ -72,7 +72,6 @@ namespace ntp {
             , m_callback(callback)
             , m_timer(m_io)
             , m_resolver(m_io)
-            , m_socket(m_io, asio::ip::udp::v4())
             , m_finalized(false)
         {
         }
@@ -168,7 +167,6 @@ namespace ntp {
         asio::io_context m_io;
         asio::steady_timer m_timer;
         asio::ip::udp::resolver m_resolver;
-        asio::ip::udp::socket m_socket;
         std::weak_ptr<QuerySeries> m_subquery;
         bool m_finalized;
     };
