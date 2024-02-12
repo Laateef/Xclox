@@ -111,17 +111,17 @@ TEST_SUITE("Tracer")
         CHECK(t.wait(1, seconds(0)) == 1);
         CHECK(compare(start, milliseconds(1)));
         std::thread([&] {
-            std::this_thread::sleep_for(milliseconds(100));
+            std::this_thread::sleep_for(milliseconds(200));
             t.callable()();
-            std::this_thread::sleep_for(milliseconds(100));
+            std::this_thread::sleep_for(milliseconds(300));
             t.callable()();
         }).detach();
         CHECK(t.wait(2, milliseconds(50)) == 1);
         CHECK(compare(start, milliseconds(50)));
-        CHECK(t.wait(3, milliseconds(100)) == 2);
-        CHECK(compare(start, milliseconds(150)));
-        CHECK(t.wait(3, milliseconds(100)) == 3);
-        CHECK(compare(start, milliseconds(200)));
+        CHECK(t.wait(3, milliseconds(200)) == 2);
+        CHECK(compare(start, milliseconds(250)));
+        CHECK(t.wait(3, milliseconds(300)) == 3);
+        CHECK(compare(start, milliseconds(500)));
     }
 
     TEST_CASE("parameterizable callbacks")
@@ -194,7 +194,7 @@ TEST_SUITE("Tracer")
                 }
             }).detach();
         }
-        CHECK(t.wait(count * multiplier) == count * multiplier);
+        CHECK(t.wait(count * multiplier, seconds(3)) == count * multiplier);
     }
 
     TEST_CASE("resetable")

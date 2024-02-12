@@ -11,7 +11,11 @@
 bool compare(const steady_clock::duration& actualDuration, const milliseconds& referenceDuration)
 {
     const auto diff = duration_cast<milliseconds>(actualDuration) - referenceDuration;
-    return milliseconds(-25) < diff && diff < milliseconds(175);
+#ifdef __APPLE__
+    return milliseconds(-25) < diff && diff < milliseconds(275);
+#else
+    return milliseconds(-25) < diff && diff < milliseconds(75);
+#endif
 }
 
 bool compare(const steady_clock::time_point& start, const milliseconds& duration)

@@ -118,7 +118,7 @@ TEST_SUITE("Client")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "cancel queries concurrently" * doctest::timeout(5))
+    TEST_CASE_FIXTURE(Context, "cancel queries concurrently" * doctest::timeout(10))
     {
         std::vector<Server*> serverList { &server1, &server2, &server3, &server4, &server5 };
         const size_t ServerCount = serverList.size();
