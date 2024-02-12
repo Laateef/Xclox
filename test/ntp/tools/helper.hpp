@@ -8,19 +8,19 @@
 #ifndef XCLOX_HELPER_COMMON
 #define XCLOX_HELPER_COMMON
 
-bool compare(const steady_clock::duration& actualDuration, const milliseconds& referenceDuration)
+bool compare(const std::chrono::steady_clock::duration& actualDuration, const std::chrono::milliseconds& referenceDuration)
 {
-    const auto diff = duration_cast<milliseconds>(actualDuration) - referenceDuration;
+    const auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(actualDuration) - referenceDuration;
 #ifdef __APPLE__
-    return milliseconds(-25) < diff && diff < milliseconds(275);
+    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(275);
 #else
-    return milliseconds(-25) < diff && diff < milliseconds(75);
+    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(75);
 #endif
 }
 
-bool compare(const steady_clock::time_point& start, const milliseconds& duration)
+bool compare(const std::chrono::steady_clock::time_point& start, const std::chrono::milliseconds& duration)
 {
-    return compare(steady_clock::now() - start, duration);
+    return compare(std::chrono::steady_clock::now() - start, duration);
 }
 
 namespace std {
@@ -30,7 +30,7 @@ ostream& operator<<(ostream& os, const chrono::duration<R, P>& d)
     return os << steady_clock::duration(d).count();
 }
 template <class C>
-ostream& operator<<(ostream& os, const time_point<C>& tp)
+ostream& operator<<(ostream& os, const chrono::time_point<C>& tp)
 {
     return os << tp.time_since_epoch();
 }
@@ -83,12 +83,12 @@ ostream& operator<<(ostream& os, const xclox::ntp::Timestamp& timestamp)
 
 bool isClientPacket(const xclox::ntp::Packet& packet)
 {
-    return packet.version() == 4 && packet.mode() == 3 && xclox::ntp::Timestamp(system_clock::now()) - xclox::ntp::Timestamp(packet.transmitTimestamp()) < seconds(2);
+    return packet.version() == 4 && packet.mode() == 3 && xclox::ntp::Timestamp(std::chrono::system_clock::now()) - xclox::ntp::Timestamp(packet.transmitTimestamp()) < std::chrono::seconds(2);
 }
 
 bool isServerPacket(const xclox::ntp::Packet& packet)
 {
-    return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && xclox::ntp::Timestamp(system_clock::now()) - xclox::ntp::Timestamp(packet.transmitTimestamp()) < seconds(2);
+    return (packet.version() == 3 || packet.version() == 4) && packet.mode() == 4 && xclox::ntp::Timestamp(std::chrono::system_clock::now()) - xclox::ntp::Timestamp(packet.transmitTimestamp()) < std::chrono::seconds(2);
 }
 
 namespace std {

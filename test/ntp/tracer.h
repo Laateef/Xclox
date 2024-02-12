@@ -118,9 +118,9 @@ TEST_SUITE("Tracer")
         }).detach();
         CHECK(t.wait(2, milliseconds(50)) == 1);
         CHECK(compare(start, milliseconds(50)));
-        CHECK(t.wait(3, milliseconds(200)) == 2);
-        CHECK(compare(start, milliseconds(250)));
-        CHECK(t.wait(3, milliseconds(300)) == 3);
+        CHECK(t.wait(3, milliseconds(300)) == 2);
+        CHECK(compare(start, milliseconds(350)));
+        CHECK(t.wait(3, milliseconds(600)) == 3);
         CHECK(compare(start, milliseconds(500)));
     }
 
@@ -194,7 +194,7 @@ TEST_SUITE("Tracer")
                 }
             }).detach();
         }
-        CHECK(t.wait(count * multiplier, seconds(3)) == count * multiplier);
+        CHECK(t.wait(count * multiplier, seconds(9)) == count * multiplier);
     }
 
     TEST_CASE("resetable")

@@ -7,8 +7,8 @@
 
 #include "xclox/time.hpp"
 
-using namespace std::chrono;
 using namespace xclox;
+using namespace std::chrono;
 
 TEST_SUITE("Time")
 {

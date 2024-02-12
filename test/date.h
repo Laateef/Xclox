@@ -8,6 +8,7 @@
 #include "xclox/date.hpp"
 
 using namespace xclox;
+using namespace std::chrono;
 
 TEST_SUITE("Date")
 {

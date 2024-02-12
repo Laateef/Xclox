@@ -71,10 +71,10 @@ TEST_SUITE("Server")
     {
         for (size_t i = 1; i < 5; ++i) {
             const auto& timeout = milliseconds(i * 100);
-            const auto& testCaseStart = steady_clock::now();
+            const auto& start = steady_clock::now();
             server.receive(timeout);
-            CHECK(tracer.wait(1, milliseconds(timeout + milliseconds(50))) == 1);
-            CHECK(steady_clock::now() - testCaseStart < timeout + milliseconds(100));
+            CHECK(tracer.wait() == 1);
+            CHECK(compare(start, timeout));
             CHECK(tracer.find([&](const asio::ip::udp::endpoint& endpoint,
                                   const asio::error_code& error,
                                   const uint8_t* data,
