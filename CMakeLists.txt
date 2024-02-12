@@ -15,8 +15,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Generate version.hpp
 configure_file(
-  ${PROJECT_SOURCE_DIR}/version.in
-  ${PROJECT_SOURCE_DIR}/include/xclox/version.hpp
+    ${PROJECT_SOURCE_DIR}/version.in
+    ${PROJECT_SOURCE_DIR}/include/xclox/version.hpp
 )
 
 # Fetch ASIO
@@ -30,8 +30,9 @@ add_library(xclox INTERFACE)
 target_sources(xclox INTERFACE ${header_files})
 target_include_directories(xclox SYSTEM INTERFACE ${asio_SOURCE_DIR}/include include)
 
+option(XCLOX_CODE_COVERAGE "generate a code-coverage report" OFF)
 option(XCLOX_BUILD_TESTS "build tests" ON)
-if (XCLOX_BUILD_TESTS)
+if(XCLOX_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 

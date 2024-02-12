@@ -16,6 +16,10 @@ target_compile_options(tests PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall -Wextra -pedantic -Werror>
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
 )
+if(XCLOX_CODE_COVERAGE)
+    target_compile_options(tests PRIVATE --coverage)
+    target_link_options(tests PRIVATE --coverage)
+endif()
 
 enable_testing()
 add_test(tests tests)

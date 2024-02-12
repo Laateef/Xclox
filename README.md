@@ -1,6 +1,7 @@
 # Xclox
 
 [![build](https://github.com/Laateef/Xclox/actions/workflows/ci.yml/badge.svg)](https://github.com/Laateef/Xclox/actions)
+[![codecov](https://codecov.io/gh/Laateef/Xclox/graph/badge.svg?token=BRA4UX75XF)](https://codecov.io/gh/Laateef/Xclox)
 [![license](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A header-only cross-platform date and time library for C++.
