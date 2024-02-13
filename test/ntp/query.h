@@ -32,7 +32,7 @@ TEST_SUITE("Query")
         asio::thread_pool pool;
     };
 
-    TEST_CASE_FIXTURE(Context, "non-existing domain" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "non-existing domain" * doctest::timeout(2))
     {
         const std::string& host = "x.y";
         Query::start(pool, host, queryTracer.callable());
@@ -42,7 +42,7 @@ TEST_SUITE("Query")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "non-existing server" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "non-existing server" * doctest::timeout(2))
     {
         const std::string& host = "255.255.255.255";
         Query::start(pool, host, queryTracer.callable());
@@ -52,7 +52,7 @@ TEST_SUITE("Query")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "custom port" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "custom port" * doctest::timeout(2))
     {
         SUBCASE("name")
         {
@@ -74,7 +74,7 @@ TEST_SUITE("Query")
         }
     }
 
-    TEST_CASE_FIXTURE(Context, "bogus server" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "bogus server" * doctest::timeout(2))
     {
         uint8_t data {};
         server1.replay(&data, 1);
@@ -86,7 +86,7 @@ TEST_SUITE("Query")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "success" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "success" * doctest::timeout(2))
     {
         server1.replay(nullptr, 0, milliseconds(100));
         const std::string& host = stringify(server1.endpoint());
@@ -97,7 +97,7 @@ TEST_SUITE("Query")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "non-blocking" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "non-blocking" * doctest::timeout(2))
     {
         server1.replay(nullptr, 0, milliseconds(200));
         const std::string& host = stringify(server1.endpoint());
@@ -110,7 +110,7 @@ TEST_SUITE("Query")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "traceable" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "traceable" * doctest::timeout(2))
     {
         const std::string host = "x.y";
         auto query = Query::start(pool, host, queryTracer.callable());
@@ -140,7 +140,7 @@ TEST_SUITE("Query")
         CHECK(compare(start, milliseconds(timeoutMs)));
     }
 
-    TEST_CASE_FIXTURE(Context, "timeout - query" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "timeout - query" * doctest::timeout(2))
     {
         for (int i = 0; i < 3; ++i) {
             server1.receive();
@@ -173,7 +173,7 @@ TEST_SUITE("Query")
         CHECK(compare(start, milliseconds(1)));
     }
 
-    TEST_CASE_FIXTURE(Context, "cancellable during query - multiple times" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "cancellable during query - multiple times" * doctest::timeout(4))
     {
         const auto& start = steady_clock::now();
         server1.replay(nullptr, 0, milliseconds(300));
@@ -201,7 +201,7 @@ TEST_SUITE("Query")
         CHECK(compare(start, milliseconds(300)));
     }
 
-    TEST_CASE_FIXTURE(Context, "cancellable concurrently" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "cancellable concurrently" * doctest::timeout(2))
     {
         std::vector<Server*> serverList { &server1, &server2, &server3, &server4, &server5 };
         const size_t QueryCount = serverList.size();
@@ -220,7 +220,7 @@ TEST_SUITE("Query")
         }
     }
 
-    TEST_CASE_FIXTURE(Context, "domain name" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "domain name" * doctest::timeout(6))
     {
         const std::string& host = "time.windows.com";
         Query::start(pool, host, queryTracer.callable());

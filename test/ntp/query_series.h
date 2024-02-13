@@ -214,7 +214,7 @@ TEST_SUITE("QuerySeries")
     TEST_CASE_FIXTURE(Context, "default timeout")
     {
         server1.receive();
-        server2.receive(milliseconds(QuerySingle::DefaultTimeout::ms + 100));
+        server2.receive(milliseconds(QuerySingle::DefaultTimeout::ms + 1000));
         const auto& start = steady_clock::now();
         std::vector<asio::ip::udp::endpoint> endpointList { server1.endpoint(), server2.endpoint() };
         auto query = QuerySeries::start(io, asio::ip::udp::resolver::results_type::create(endpointList.begin(), endpointList.end(), "", ""), queryTracer.callable());

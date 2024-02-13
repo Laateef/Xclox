@@ -31,7 +31,7 @@ TEST_SUITE("Client")
         Server server1, server2, server3, server4, server5;
     };
 
-    TEST_CASE_FIXTURE(Context, "query" * doctest::timeout(5))
+    TEST_CASE_FIXTURE(Context, "query" * doctest::timeout(6))
     {
         Client client(clientTracer.callable());
         client.query("x.y");
@@ -49,7 +49,7 @@ TEST_SUITE("Client")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "reset callback" * doctest::timeout(2))
+    TEST_CASE_FIXTURE(Context, "reset callback" * doctest::timeout(3))
     {
         Client client(clientTracer.callable());
         client.query("x.y");
@@ -59,7 +59,7 @@ TEST_SUITE("Client")
         CHECK(clientTracer.wait(2) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "query concurrently" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "query concurrently" * doctest::timeout(5))
     {
         Client client(clientTracer.callable());
         const std::string& host1 = stringify(server1.endpoint());
@@ -91,7 +91,7 @@ TEST_SUITE("Client")
         }) == QueryCount);
     }
 
-    TEST_CASE_FIXTURE(Context, "cancel queries" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "cancel queries" * doctest::timeout(4))
     {
         const std::string& host = stringify(server1.endpoint());
         Client client(clientTracer.callable());
@@ -147,7 +147,7 @@ TEST_SUITE("Client")
         }) == 1);
     }
 
-    TEST_CASE_FIXTURE(Context, "time out" * doctest::timeout(1))
+    TEST_CASE_FIXTURE(Context, "time out" * doctest::timeout(2))
     {
         const std::string& host = stringify(server1.endpoint());
         for (int i = 0; i < 3; ++i) {

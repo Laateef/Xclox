@@ -74,7 +74,7 @@ namespace ntp {
             query->m_timer.async_wait([query](const asio::error_code& error) {
                 if (error != asio::error::operation_aborted) {
                     query->m_timer.expires_at(std::chrono::steady_clock::time_point::min());
-                    query->m_socket.close();
+                    query->close();
                 }
             });
             Packet packet(0, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, Timestamp(std::chrono::system_clock::now()).value());
@@ -110,7 +110,7 @@ namespace ntp {
         void cancel()
         {
             m_timer.expires_at(std::chrono::steady_clock::time_point::max());
-            m_socket.close();
+            close();
         }
 
     private:

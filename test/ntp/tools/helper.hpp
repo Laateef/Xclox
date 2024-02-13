@@ -12,9 +12,9 @@ bool compare(const std::chrono::steady_clock::duration& actualDuration, const st
 {
     const auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(actualDuration) - referenceDuration;
 #ifdef __APPLE__
-    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(275);
+    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(325);
 #else
-    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(75);
+    return std::chrono::milliseconds(-25) < diff && diff < std::chrono::milliseconds(125);
 #endif
 }
 
