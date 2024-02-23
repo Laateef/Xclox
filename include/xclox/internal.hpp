@@ -8,11 +8,12 @@
 #ifndef XCLOX_INTERNAL_HPP
 #define XCLOX_INTERNAL_HPP
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
-#include <array>
-#include <algorithm>
+#include <unordered_map>
 
 namespace xclox {
 
@@ -39,7 +40,7 @@ namespace internal {
         return std::stoi(intStr);
     }
 
-    inline std::string getShortWeekdayName(int index)
+    inline std::string getShortWeekdayName(int day)
     {
         static const std::string weekdayNameArray[] = {
             "Mon",
@@ -50,10 +51,10 @@ namespace internal {
             "Sat",
             "Sun"
         };
-        return weekdayNameArray[index - 1];
+        return weekdayNameArray[day - 1];
     }
 
-    inline std::string getLongWeekdayName(int index)
+    inline std::string getLongWeekdayName(int day)
     {
         static const std::string weekdayNameArray[] = {
             "Monday",
@@ -64,7 +65,7 @@ namespace internal {
             "Saturday",
             "Sunday"
         };
-        return weekdayNameArray[index - 1];
+        return weekdayNameArray[day - 1];
     }
 
     inline const std::array<std::string, 12>& getShortMonthNameArray()
@@ -123,6 +124,25 @@ namespace internal {
     inline int getLongMonthNumber(const std::string& month)
     {
         return static_cast<int>(std::distance(getLongMonthNameArray().cbegin(), std::find(getLongMonthNameArray().cbegin(), getLongMonthNameArray().cend(), month)) + 1);
+    }
+
+    inline bool isPattern(char flag, size_t count)
+    {
+        static const std::unordered_map<char, size_t> patternMap {
+            { '#', 1 },
+            { 'E', 1 },
+            { 'y', (1 | 1 << 1 | 1 << 3) },
+            { 'M', (1 | 1 << 1 | 1 << 2 | 1 << 3) },
+            { 'd', (1 | 1 << 1 | 1 << 2 | 1 << 3) },
+            { 'h', (1 | 1 << 1) },
+            { 'm', (1 | 1 << 1) },
+            { 's', (1 | 1 << 1) },
+            { 'f', (1 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8) },
+            { 'a', 1 },
+            { 'A', 1 }
+        };
+        const auto iter = patternMap.find(flag);
+        return iter != patternMap.cend() && iter->second & (1 << count - 1);
     }
 
 } // namespace internal

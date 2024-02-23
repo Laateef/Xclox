@@ -86,23 +86,16 @@ public:
     /// Move-constructs a DateTime object from \p other.
     DateTime(DateTime&& other) = default;
 
-    // const auto& microseconds = std::chrono::duration_cast<std::chrono::microseconds>(timePoint.time_since_epoch() % std::chrono::seconds(1));
-    // const auto& floatingSecond = std::chrono::seconds(timePoint.time_since_epoch().count() < 0 && microseconds.count() != 0 ? 1 : 0);
-    // const auto t {std::chrono::system_clock::to_time_t(timePoint - floatingSecond)};
-    // stream << std::put_time(std::gmtime(&t), "%F %T") << "." << std::setfill('0') << std::setw(6) << (floatingSecond + microseconds).count();
-
     /**
      * Constructs a DateTime object from \p duration since the epoch "1970-01-01 00:00:00 UTC".
      * The constructed datetime has whatever precision it is given, down to nanoseconds.
      */
     explicit DateTime(const Duration& duration)
-    // : m_date(std::chrono::duration_cast<Days>(duration))
-    // , m_time(duration % Days(1))
     {
-        const auto& subday = duration % Days(1);
-        const auto& floatingDay = Days(duration.count() < 0 && subday.count() != 0 ? 1 : 0);
+        const auto& subDay = duration % Days(1);
+        const auto& floatingDay = Days(duration.count() < 0 && subDay.count() != 0 ? 1 : 0);
         m_date = Date(std::chrono::duration_cast<Days>(duration - floatingDay));
-        m_time = Time(subday + floatingDay);
+        m_time = Time(subDay + floatingDay);
     }
 
     /// Constructs a DateTime object from the standard library's chrono time point, \p timePoint.
@@ -622,7 +615,7 @@ public:
      *    ----------- | -----------------------------------------------------
      *    #           | era of year as a positive sign(+) or negative sign(-)
      *    E           | era of year as CE or BCE
-     *    y           | year as one digit or more (1, 9999)
+     *    y           | year as one digit or more (1, 9999+)
      *    yy          | year of era as two digits (00, 99)
      *    yyyy        | year as four digits (0000, 9999)
      *    M           | month of year as one digit or more (1, 12)
@@ -657,12 +650,17 @@ public:
      * If the datetime is invalid, an empty string will be returned.
      * @see dayOfWeekName(), monthName()
      */
-    std::string toString(const std::string& format) const
+    std::string toString(const std::string& format = "yyyy-MM-dd hh:mm:ss") const
     {
-        if (!isValid())
+        if (!isValid() || format.empty())
             return std::string();
-
-        return m_date.toString(m_time.toString(format));
+        std::stringstream output;
+        for (size_t pos = 0; pos < format.size(); ++pos) {
+            const auto count = internal::countIdenticalCharsFrom(pos, format);
+            output << (internal::isPattern(format.at(pos), count) ? stringify(format.at(pos), count) : format.substr(pos, count));
+            pos += count - 1;
+        }
+        return output.str();
     }
 
     /// @}
@@ -673,7 +671,7 @@ public:
      */
     static DateTime current()
     {
-        return DateTime(Date::current(), Time::current());
+        return DateTime(std::chrono::system_clock::now());
     }
 
     /// Returns a DateTime object set to the epoch "1970-1-1T00:00:00".
@@ -848,6 +846,55 @@ public:
     /// @}
 
 private:
+    std::string stringify(char flag, size_t count) const
+    {
+        std::stringstream output;
+        output << std::setfill('0') << std::setw(count);
+        if (flag == '#') {
+            output << (year() < 0 ? "-" : "+");
+        } else if (flag == 'E') {
+            output << (year() < 0 ? "BCE" : "CE");
+        } else if (flag == 'y') {
+            const int y = std::abs(year());
+            if (count == 1) {
+                output << y;
+            } else if (count == 2) {
+                output << y - (y / 100 * 100);
+            } else if (count == 4) {
+                output << y - (y / 10000 * 10000);
+            }
+        } else if (flag == 'M') {
+            if (count == 1 || count == 2) {
+                output << month();
+            } else if (count == 3) {
+                output << internal::getShortMonthName(month());
+            } else if (count == 4) {
+                output << internal::getLongMonthName(month());
+            }
+        } else if (flag == 'd') {
+            if (count == 1 || count == 2) {
+                output << day();
+            } else if (count == 3) {
+                output << internal::getShortWeekdayName(dayOfWeek());
+            } else if (count == 4) {
+                output << internal::getLongWeekdayName(dayOfWeek());
+            }
+        } else if (flag == 'h') {
+            output << hour();
+        } else if (flag == 'm') {
+            output << minute();
+        } else if (flag == 's') {
+            output << second();
+        } else if (flag == 'f') {
+            output << nanosecond() / static_cast<long>(std::pow(10, 9 - count));
+        } else if (flag == 'a') {
+            output << (hour() < 12 ? "am" : "pm");
+        } else if (flag == 'A') {
+            output << (hour() < 12 ? "AM" : "PM");
+        }
+        return output.str();
+    }
+
     Date m_date;
     Time m_time;
 };

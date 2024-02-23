@@ -14,7 +14,7 @@ It has been thoroughly tested, as its development has been test-driven (TDD).
 
 ## Usage
 
-The following example shows only the basic functionalities of the library. For further details, please see the documentation.
+The following example shows only the basic functionalities of the library. For further details, please see the [documentation](https://laateef.github.io/Xclox/index.html).
 
 ### Example
 

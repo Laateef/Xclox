@@ -287,6 +287,8 @@ TEST_SUITE("Date")
         }
         SUBCASE("days in month")
         {
+            CHECK(Date::daysInMonthOfYear(1, 0) == -1);
+            CHECK(Date::daysInMonthOfYear(1, 32) == -1);
             CHECK(Date::daysInMonthOfYear(1970, 1) == 31);
             CHECK(Date(1970, 1, 1).daysInMonth() == 31);
             CHECK(Date(1970, 2, 1).daysInMonth() == 28);

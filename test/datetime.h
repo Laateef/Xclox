@@ -184,16 +184,7 @@ TEST_SUITE("DateTime")
 
     TEST_CASE("current datetime")
     {
-        // DateTime dt = DateTime::current();
-        // std::time_t tTime = std::time(nullptr);
-        // std::tm* tmTime = std::gmtime(&tTime);
-
-        // CHECK(dt.year() == tmTime->tm_year + 1900);
-        // CHECK(dt.month() == tmTime->tm_mon + 1);
-        // CHECK(dt.day() == tmTime->tm_mday);
-        // CHECK(dt.hour() == tmTime->tm_hour);
-        // CHECK(dt.minute() == tmTime->tm_min);
-        // CHECK(dt.second() == tmTime->tm_sec);
+        CHECK(abs(duration_cast<milliseconds>(DateTime::current().toStdTimePoint() - system_clock::now()).count()) < 100);
     }
 
     TEST_CASE("epoch")
@@ -237,11 +228,201 @@ TEST_SUITE("DateTime")
 
     TEST_CASE("formatting")
     {
-        CHECK(DateTime().toString("d/M/yyyy, hh:mm:ss.fffffffff") == "");
-        CHECK(DateTime(Date(1999, 5, 18), Time(23, 55, 57, Time::Nanoseconds(123456789))).toString("d/M/yyyy, hh:mm:ss.fffffffff") == "18/5/1999, 23:55:57.123456789");
-        CHECK(DateTime(Date(1969, 12, 31), Time(23, 59, 59, 1)).toString("yyyy-MM-dd hh:mm:ss.fff") == "1969-12-31 23:59:59.001");
+        SUBCASE("empty format")
+        {
+            CHECK(DateTime(Date(2024, 2, 15), Time(2, 3, 1, 4)).toString("") == "");
+        }
+        SUBCASE("era of year as a positive(+) or negative(-) sign")
+        {
+            CHECK(DateTime(Date(-1, 2, 3), Time(4, 5, 6)).toString("#") == "-");
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("#") == "+");
+        }
+        SUBCASE("era of year as CE or BCE")
+        {
+            CHECK(DateTime(Date(-1, 2, 3), Time(4, 5, 6)).toString("E") == "BCE");
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("E") == "CE");
+        }
+        SUBCASE("year as one digit or more (1, 9999+)")
+        {
+            CHECK(DateTime(Date(-1, 2, 3), Time(4, 5, 6)).toString("y") == "1");
+            CHECK(DateTime(Date(11, 2, 3), Time(4, 5, 6)).toString("y") == "11");
+        }
+        SUBCASE("year of era as two digits (00, 99)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("yy") == "01");
+            CHECK(DateTime(Date(-1, 2, 3), Time(4, 5, 6)).toString("yy") == "01");
+            CHECK(DateTime(Date(123, 2, 3), Time(4, 5, 6)).toString("yy") == "23");
+            CHECK(DateTime(Date(-1234, 2, 3), Time(4, 5, 6)).toString("yy") == "34");
+        }
+        SUBCASE("year as four digits (0000, 9999)")
+        {
+            CHECK(DateTime(Date(-1, 2, 3), Time(4, 5, 6)).toString("yyyy") == "0001");
+            CHECK(DateTime(Date(12345, 2, 3), Time(4, 5, 6)).toString("yyyy") == "2345");
+        }
+        SUBCASE("month of year as one digit or more (1, 12)")
+        {
+            CHECK(DateTime(Date(1, 1, 3), Time(4, 5, 6)).toString("M") == "1");
+        }
+        SUBCASE("month of year as two digits (01, 12)")
+        {
+            CHECK(DateTime(Date(1, 1, 3), Time(4, 5, 6)).toString("MM") == "01");
+        }
+        SUBCASE("month of year as short name (e.g. Feb)")
+        {
+            CHECK(DateTime(Date(1, 1, 3), Time(4, 5, 6)).toString("MMM") == "Jan");
+        }
+        SUBCASE("month of year as short name (e.g. February)")
+        {
+            CHECK(DateTime(Date(1, 1, 3), Time(4, 5, 6)).toString("MMMM") == "January");
+        }
+        SUBCASE("day of month as one digit or more (1, 31)")
+        {
+            CHECK(DateTime(Date(1, 1, 1), Time(4, 5, 6)).toString("d") == "1");
+        }
+        SUBCASE("day of month as two digits (00, 31)")
+        {
+            CHECK(DateTime(Date(1, 1, 1), Time(4, 5, 6)).toString("dd") == "01");
+        }
+        SUBCASE("day of week as short name (e.g. Fri)")
+        {
+            CHECK(DateTime(Date(2024, 2, 18), Time(4, 5, 6)).toString("ddd") == "Sun");
+        }
+        SUBCASE("day of week as long name (e.g. Friday)")
+        {
+            CHECK(DateTime(Date(2024, 2, 18), Time(4, 5, 6)).toString("dddd") == "Sunday");
+        }
+        SUBCASE("one-digit hour (0, 23)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("h") == "4");
+        }
+        SUBCASE("two-digit hour (00, 23)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("hh") == "04");
+        }
+        SUBCASE("one-digit minute (0, 59)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("m") == "5");
+        }
+        SUBCASE("two-digit minute (00, 59)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("mm") == "05");
+        }
+        SUBCASE("one-digit second (0, 59)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("s") == "6");
+        }
+        SUBCASE("two-digit second (00, 59)")
+        {
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6)).toString("ss") == "06");
+        }
+        SUBCASE("subsecond")
+        {
+            DateTime dt1(Date(1, 2, 3), Time(4, 5, 6, 0));
+            DateTime dt2(Date(1, 2, 3), Time(4, 5, 6, DateTime::Nanoseconds(987654321)));
+
+            SUBCASE("one-digit subsecond (0, 9)")
+            {
+                CHECK(dt1.toString("f") == "0");
+                CHECK(dt2.toString("f") == "9");
+            }
+            SUBCASE("two-digit subsecond (00, 99)")
+            {
+                CHECK(dt1.toString("ff") == "00");
+                CHECK(dt2.toString("ff") == "98");
+            }
+            SUBCASE("three-digit subsecond (000, 999)")
+            {
+                CHECK(dt1.toString("fff") == "000");
+                CHECK(dt2.toString("fff") == "987");
+            }
+            SUBCASE("four-digit subsecond (0000, 9999)")
+            {
+                CHECK(dt1.toString("ffff") == "0000");
+                CHECK(dt2.toString("ffff") == "9876");
+            }
+            SUBCASE("five-digit subsecond (00000, 99999)")
+            {
+                CHECK(dt1.toString("fffff") == "00000");
+                CHECK(dt2.toString("fffff") == "98765");
+            }
+            SUBCASE("six-digit subsecond (000000, 999999)")
+            {
+                CHECK(dt1.toString("ffffff") == "000000");
+                CHECK(dt2.toString("ffffff") == "987654");
+            }
+            SUBCASE("seven-digit subsecond (0000000, 9999999)")
+            {
+                CHECK(dt1.toString("fffffff") == "0000000");
+                CHECK(dt2.toString("fffffff") == "9876543");
+            }
+            SUBCASE("eight-digit subsecond (00000000, 99999999)")
+            {
+                CHECK(dt1.toString("ffffffff") == "00000000");
+                CHECK(dt2.toString("ffffffff") == "98765432");
+            }
+            SUBCASE("nine-digit subsecond (000000000, 999999999)")
+            {
+                CHECK(dt1.toString("fffffffff") == "000000000");
+                CHECK(dt2.toString("fffffffff") == "987654321");
+            }
+        }
+        SUBCASE("before/after noon indicator (i.e. am or pm)")
+        {
+            Date d(1, 2, 3);
+            DateTime dt1(d, Time(0, 0, 0));
+            DateTime dt2(d, Time(11, 59, 59));
+            DateTime dt3(d, Time(12, 0, 0));
+            DateTime dt4(d, Time(23, 59, 59));
+
+            SUBCASE("am / pm")
+            {
+                CHECK(dt1.toString("a") == "am");
+                CHECK(dt2.toString("a") == "am");
+                CHECK(dt3.toString("a") == "pm");
+                CHECK(dt4.toString("a") == "pm");
+            }
+            SUBCASE("AM / PM)")
+            {
+                CHECK(dt1.toString("A") == "AM");
+                CHECK(dt2.toString("A") == "AM");
+                CHECK(dt3.toString("A") == "PM");
+                CHECK(dt4.toString("A") == "PM");
+            }
+        }
+        SUBCASE("unrecognized flags are preserved")
+        {
+            const auto& text = "- GNU'S NOT UNIX!";
+            CHECK(DateTime(Date(1, 2, 3), Time(4, 5, 6, DateTime::Nanoseconds(987654321))).toString(text) == text);
+        }
+        SUBCASE("combinations of format specifiers")
+        {
+            DateTime dt(Date(2024, 2, 18), Time(21, 46, 7, DateTime::Nanoseconds(987654321)));
+            CHECK_EQ(dt.toString(" # E y-yy-yyyy M-MM-MMM-MMMM d-dd-ddd-dddd h-hh-m-mm-s-ss f-ff-fff-ffff-fffff-ffffff-fffffff-ffffffff-fffffffff a A "),
+                " + CE 2024-24-2024 2-02-Feb-February 18-18-Sun-Sunday 21-21-46-46-7-07 9-98-987-9876-98765-987654-9876543-98765432-987654321 pm PM ");
+        }
+        SUBCASE("flags with unrecognized length are preserved")
+        {
+            DateTime dt(Date(2024, 2, 18), Time(21, 46, 7, DateTime::Nanoseconds(987654321)));
+            CHECK(dt.toString(" yyy yyyyy ddddd MMMMM hhh mmm sss ffffffffff ") == " yyy yyyyy ddddd MMMMM hhh mmm sss ffffffffff ");
+        }
+        SUBCASE("default format")
+        {
+            CHECK(DateTime(Date(2024, 2, 18), Time(21, 46, 7, DateTime::Nanoseconds(987654321))).toString() == "2024-02-18 21:46:07");
+        }
+        SUBCASE("invalid date or time")
+        {
+            CHECK(DateTime().toString("d/M/yyyy, hh:mm:ss.fffffffff") == "");
+            CHECK(DateTime(Date(0, 0, 0), Time(-4, -5, 66)).toString("#y-M-d h:m:s.f") == "");
+            CHECK(DateTime(Date(1, -2, -3), Time(4, 5, 6)).toString("E yy-MMM-ddd h-mm-ss A") == "");
+            CHECK(DateTime(Date(0, 2, 3), Time(4, 5, 6, -9)).toString("@ yyyy-MM-dd hh:mm:ss.fff a") == "");
+        }
         //
         // additional tests.
+        //
+        // ISO format
+        CHECK(DateTime(Date(2024, 2, 18), Time(21, 46, 7, DateTime::Nanoseconds(987654321))).toString("yyyy-MM-ddThh:mm:ss") == "2024-02-18T21:46:07");
+        // Web format
+        CHECK(DateTime(Date(2024, 2, 18), Time(21, 46, 7, DateTime::Nanoseconds(987654321))).toString("ddd, dd MMM yyyy hh:mm:ss") == "Sun, 18 Feb 2024 21:46:07");
         //
         const auto& format = "yyyy-MM-dd hh:mm:ss.fffffffff";
         // NTP epoch

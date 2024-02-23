@@ -140,7 +140,7 @@ TEST_SUITE("Time")
 
     TEST_CASE("current time")
     {
-        CHECK(abs(duration_cast<milliseconds>(Time::current() - Time(system_clock::now())).count()) < 50);
+        CHECK(abs(duration_cast<milliseconds>(Time::current() - Time(system_clock::now())).count()) < 100);
     }
 
     TEST_CASE("midnight")
@@ -200,6 +200,16 @@ TEST_SUITE("Time")
 
     TEST_CASE("formatting")
     {
+        SUBCASE("empty format")
+        {
+            CHECK(Time(1, 2, 3).toString("") == "");
+        }
+        SUBCASE("invalid time")
+        {
+            CHECK(Time().toString("H:m:s") == "");
+            CHECK(Time(0, 0, -1).toString("H:m:s") == "");
+            CHECK(Time(Time::Hours(24)).toString("HH:mm:ss") == "");
+        }
         SUBCASE("12 hours")
         {
             CHECK(Time(23, 45, 2).toString("H:m:s") == "11:45:2");

@@ -34,15 +34,17 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get install -y lcov
-        lcov --capture --directory . --output-file=coverage.info
-        lcov --extract coverage.info '*/Xclox/include/*' '*/Xclox/test/ntp/tools/*' --output-file coverage.txt
+        lcov --capture --directory . --output-file=coverage.info \
+          --include '*/Xclox/include/*' \
+          --include '*/Xclox/test/ntp/tools/*' \
+          --exclude '*/Xclox/test/ntp/tools/helper.hpp'
 
     - name: Upload Coverage to Codecov
       if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.txt
+        file: ./coverage.info
         verbose: true
 
   deploy:
