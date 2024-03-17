@@ -11,7 +11,7 @@ var searchData=
   ['minutes_56',['Minutes',['../classxclox_1_1DateTime.html#a72666981c51dca072b8f9bd145bb7cca',1,'xclox::DateTime::Minutes()'],['../classxclox_1_1Time.html#a99a7d5c91ea64fe5764b56e3c7e95b00',1,'xclox::Time::Minutes()']]],
   ['minutesbetween_57',['minutesBetween',['../classxclox_1_1DateTime.html#ab7ab833ee6bac43616a92bfbca685193',1,'xclox::DateTime::minutesBetween()'],['../classxclox_1_1Time.html#a4ba9526ffad438e1a7f346a80d0dd7ad',1,'xclox::Time::minutesBetween()']]],
   ['mode_58',['mode',['../classxclox_1_1ntp_1_1Packet.html#a2bb1a5050ba6b53858cf44cf176e1d4a',1,'xclox::ntp::Packet']]],
-  ['month_59',['Month',['../classxclox_1_1Date.html#a1bcee98cb09d0ece226eaf29ec53f00d',1,'xclox::Date::Month()'],['../classxclox_1_1DateTime.html#a651d5652906460b3eeac9c22d90e595f',1,'xclox::DateTime::Month()']]],
-  ['month_60',['month',['../classxclox_1_1Date.html#ab13b0253fbdf847b56c0617c0ac21f51',1,'xclox::Date::month()'],['../classxclox_1_1DateTime.html#aeb2100aa0dd67de5e2e43747c98f45b8',1,'xclox::DateTime::month()']]],
+  ['month_59',['month',['../classxclox_1_1Date.html#ab13b0253fbdf847b56c0617c0ac21f51',1,'xclox::Date::month()'],['../classxclox_1_1DateTime.html#aeb2100aa0dd67de5e2e43747c98f45b8',1,'xclox::DateTime::month()']]],
+  ['month_60',['Month',['../classxclox_1_1Date.html#a1bcee98cb09d0ece226eaf29ec53f00d',1,'xclox::Date::Month()'],['../classxclox_1_1DateTime.html#a651d5652906460b3eeac9c22d90e595f',1,'xclox::DateTime::Month()']]],
   ['monthname_61',['monthName',['../classxclox_1_1Date.html#a0e1aff423e3b422c7cc15d67a0ef9d8d',1,'xclox::Date::monthName()'],['../classxclox_1_1DateTime.html#a470a279ac557297eadd4e3bc1870b2a1',1,'xclox::DateTime::monthName()']]]
 ];

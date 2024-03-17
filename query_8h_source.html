@@ -264,7 +264,7 @@ $(document).ready(function(){initNavTree('query_8h_source.html',''); initResizab
 <div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    TEST_CASE_FIXTURE(Context, <span class="stringliteral">&quot;cancellable during query - multiple times&quot;</span> * doctest::timeout(4))</div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    {</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; start = steady_clock::now();</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        server1.replay(<span class="keyword">nullptr</span>, 0, milliseconds(300));</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        server1.replay(<span class="keyword">nullptr</span>, 0, milliseconds(400));</div>
 <div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keyword">const</span> std::string&amp; host = stringify(server1.endpoint());</div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        <span class="keyword">auto</span> query = <a class="code" href="classxclox_1_1ntp_1_1Query.html#ad4221db49f3f07f0c96c38169cda7bb4">Query::start</a>(pool, host, queryTracer.callable());</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        CHECK(serverTracer1.wait() == 1);</div>
@@ -286,7 +286,7 @@ $(document).ready(function(){initNavTree('query_8h_source.html',''); initResizab
 <div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        CHECK(query.expired());</div>
 <div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        CHECK(serverTracer1.counter() == 1);</div>
 <div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        CHECK(serverTracer1.wait(2) == 2);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        CHECK(compare(start, milliseconds(300)));</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        CHECK(compare(start, milliseconds(400)));</div>
 <div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    }</div>
 <div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    TEST_CASE_FIXTURE(Context, <span class="stringliteral">&quot;cancellable concurrently&quot;</span> * doctest::timeout(2))</div>

@@ -80,7 +80,7 @@ var classxclox_1_1DateTime =
     [ "toSecondsSinceEpoch", "classxclox_1_1DateTime.html#ac5e81c79314b439aa8501a5504b792fa", null ],
     [ "toStdDurationSinceEpoch", "classxclox_1_1DateTime.html#a0f72aff025cb93f3b9908c99cdb1df15", null ],
     [ "toStdTimePoint", "classxclox_1_1DateTime.html#afe5d9b02f4dd0b55f9bbf268a265b33d", null ],
-    [ "toString", "classxclox_1_1DateTime.html#abc8c9b21c8d92dadd819596573716f8c", null ],
+    [ "toString", "classxclox_1_1DateTime.html#a3182d9e5cab3462ab950638a0d286a77", null ],
     [ "weekOfYear", "classxclox_1_1DateTime.html#aa1e3713eb7713c75b5fc89bb4f7fb11f", null ],
     [ "year", "classxclox_1_1DateTime.html#a1a0246077c2d0a75ef29a9e476fd2576", null ],
     [ "operator<<", "classxclox_1_1DateTime.html#a43778ffb5485db4aadc4ae09abe8baf6", null ],
