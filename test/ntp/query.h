@@ -176,7 +176,7 @@ TEST_SUITE("Query")
     TEST_CASE_FIXTURE(Context, "cancellable during query - multiple times" * doctest::timeout(4))
     {
         const auto& start = steady_clock::now();
-        server1.replay(nullptr, 0, milliseconds(300));
+        server1.replay(nullptr, 0, milliseconds(400));
         const std::string& host = stringify(server1.endpoint());
         auto query = Query::start(pool, host, queryTracer.callable());
         CHECK(serverTracer1.wait() == 1);
@@ -198,7 +198,7 @@ TEST_SUITE("Query")
         CHECK(query.expired());
         CHECK(serverTracer1.counter() == 1);
         CHECK(serverTracer1.wait(2) == 2);
-        CHECK(compare(start, milliseconds(300)));
+        CHECK(compare(start, milliseconds(400)));
     }
 
     TEST_CASE_FIXTURE(Context, "cancellable concurrently" * doctest::timeout(2))

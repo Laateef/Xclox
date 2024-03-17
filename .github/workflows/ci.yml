@@ -28,16 +28,14 @@ jobs:
       run: cmake --build build
 
     - name: Test
-      run: ctest --test-dir build/test --rerun-failed -V
+      run: ctest --test-dir build/test -V
 
     - name: Generate Coverage Report
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get install -y lcov
-        lcov --capture --directory . --output-file=coverage.info \
-          --include '*/Xclox/include/*' \
-          --include '*/Xclox/test/ntp/tools/*' \
-          --exclude '*/Xclox/test/ntp/tools/helper.hpp'
+        lcov --capture --directory . --output-file=base.info
+        lcov --extract base.info '*/Xclox/include/*' --output-file coverage.info
 
     - name: Upload Coverage to Codecov
       if: matrix.os == 'ubuntu-latest'
