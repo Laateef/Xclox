@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <functional>
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
@@ -34,15 +35,14 @@ namespace internal {
     {
         std::string intStr;
         while (intStr.size() < maxDigitCount && pos < str.size() && std::isdigit(str[pos])) {
-            intStr += str[pos];
-            ++pos;
+            intStr += str[pos++];
         }
         return std::stoi(intStr);
     }
 
-    inline std::string getShortWeekdayName(int day)
+    inline const std::array<std::string, 7>& getShortWeekdayNameArray()
     {
-        static const std::string weekdayNameArray[] = {
+        static const std::array<std::string, 7> weekdayNameArray = {
             "Mon",
             "Tue",
             "Wed",
@@ -51,12 +51,17 @@ namespace internal {
             "Sat",
             "Sun"
         };
-        return weekdayNameArray[day - 1];
+        return weekdayNameArray;
     }
 
-    inline std::string getLongWeekdayName(int day)
+    inline std::string getShortWeekdayName(int day)
     {
-        static const std::string weekdayNameArray[] = {
+        return getShortWeekdayNameArray()[day - 1];
+    }
+
+    inline const std::array<std::string, 7>& getLongWeekdayNameArray()
+    {
+        static const std::array<std::string, 7> weekdayNameArray = {
             "Monday",
             "Tuesday",
             "Wednesday",
@@ -65,7 +70,12 @@ namespace internal {
             "Saturday",
             "Sunday"
         };
-        return weekdayNameArray[day - 1];
+        return weekdayNameArray;
+    }
+
+    inline std::string getLongWeekdayName(int day)
+    {
+        return getLongWeekdayNameArray()[day - 1];
     }
 
     inline const std::array<std::string, 12>& getShortMonthNameArray()
@@ -126,7 +136,21 @@ namespace internal {
         return static_cast<int>(std::distance(getLongMonthNameArray().cbegin(), std::find(getLongMonthNameArray().cbegin(), getLongMonthNameArray().cend(), month)) + 1);
     }
 
-    inline bool isPattern(char flag, size_t count)
+    template <size_t S>
+    inline const size_t search(const std::array<std::string, S>& keywordArray, const std::string& input)
+    {
+        return std::distance(keywordArray.cbegin(), std::find_if(keywordArray.cbegin(), keywordArray.cend(), [&](const std::string& keyword) {
+            return std::search(
+                       input.cbegin(), input.cend(),
+                       keyword.cbegin(), keyword.cend(),
+                       [](char c1, char c2) {
+                           return std::tolower(c1) == std::tolower(c2);
+                       })
+                != input.cend();
+        }));
+    }
+
+    inline bool isPattern(char flag, size_t count = 0)
     {
         static const std::unordered_map<char, size_t> patternMap {
             { '#', 1 },
@@ -135,6 +159,7 @@ namespace internal {
             { 'M', (1 | 1 << 1 | 1 << 2 | 1 << 3) },
             { 'd', (1 | 1 << 1 | 1 << 2 | 1 << 3) },
             { 'h', (1 | 1 << 1) },
+            { 'H', (1 | 1 << 1) },
             { 'm', (1 | 1 << 1) },
             { 's', (1 | 1 << 1) },
             { 'f', (1 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8) },
@@ -142,7 +167,7 @@ namespace internal {
             { 'A', 1 }
         };
         const auto iter = patternMap.find(flag);
-        return iter != patternMap.cend() && iter->second & (1 << count - 1);
+        return iter != patternMap.cend() && (count == 0 || iter->second & (1 << count - 1));
     }
 
 } // namespace internal

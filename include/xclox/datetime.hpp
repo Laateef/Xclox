@@ -11,6 +11,8 @@
 #include "date.hpp"
 #include "time.hpp"
 
+#include <cmath>
+
 namespace xclox {
 
 /**
@@ -684,100 +686,56 @@ public:
      * Returns a DateTime object from the string \p datetime formatted according to the format string \p format.
      * The format patterns are the same patterns used in the method toString(). @see toString()
      */
-    static DateTime fromString(const std::string& datetime, const std::string& format)
+    static DateTime fromString(const std::string& datetime, const std::string& format = "yyyy-MM-dd hh:mm:ss")
     {
-        int _year = 1, _month = 1, _day = 1;
-        int _hour = 0, _minute = 0, _second = 0;
-        long _subsecond = 0;
-
-        for (size_t fmtPos = 0, dtsPos = 0; fmtPos < format.size() && dtsPos < datetime.size(); ++fmtPos) {
-            const size_t charCount = static_cast<size_t>(internal::countIdenticalCharsFrom(fmtPos, format));
-
-            if (format[fmtPos] == '#') {
-                if (datetime[dtsPos] == '+') {
-                    _year = 1;
-                    ++dtsPos;
-                } else if (datetime[dtsPos] == '-') {
-                    _year = -1;
-                    ++dtsPos;
+        int sign = 1;
+        int y = 0;
+        int M = 1;
+        int d = 1;
+        int h = 0;
+        int m = 0;
+        int s = 0;
+        int f = 0;
+        size_t dtPos = 0;
+        for (size_t fmtPos = 0; fmtPos < format.size(); ++fmtPos) {
+            const auto count = internal::countIdenticalCharsFrom(fmtPos, format);
+            if (internal::isPattern(format[fmtPos])) {
+                if (!internal::isPattern(format[fmtPos], count)) {
+                    return DateTime();
                 }
-            } else if (format[fmtPos] == 'y') {
-                if (charCount == 1) {
-                    _year = _year * internal::readIntAndAdvancePos(datetime, dtsPos, 4);
-                } else if (charCount == 2) {
-                    _year = _year * std::stoi(datetime.substr(dtsPos, charCount));
-                    _year += 2000;
-                    dtsPos += charCount;
-                } else if (charCount == 4) {
-                    _year = _year * std::stoi(datetime.substr(dtsPos, charCount));
-                    dtsPos += charCount;
-                }
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'E') {
-                if (datetime.substr(dtsPos, 2) == "CE") {
-                    _year = std::abs(_year);
-                    dtsPos += 2;
-                } else if (datetime.substr(dtsPos, 3) == "BCE") {
-                    _year = -std::abs(_year);
-                    dtsPos += 3;
-                }
-            } else if (format[fmtPos] == 'M') {
-                if (charCount == 1) {
-                    _month = internal::readIntAndAdvancePos(datetime, dtsPos, 4);
-                } else if (charCount == 2) {
-                    _month = std::stoi(datetime.substr(dtsPos, charCount));
-                    dtsPos += charCount;
-                } else if (charCount == 3) {
-                    _month = internal::getShortMonthNumber(datetime.substr(dtsPos, charCount));
-                    dtsPos += charCount;
-                } else if (charCount == 4) {
-                    size_t newPos = dtsPos;
-                    while (newPos < datetime.size() && std::isalpha(datetime[newPos]))
-                        ++newPos;
-                    _month = internal::getLongMonthNumber(datetime.substr(dtsPos, newPos - dtsPos));
-                    dtsPos = newPos;
-                }
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'd') {
-                if (charCount == 1) {
-                    _day = internal::readIntAndAdvancePos(datetime, dtsPos, 2);
-                } else if (charCount == 2) {
-                    _day = std::stoi(datetime.substr(dtsPos, charCount));
-                    dtsPos += charCount;
-                } else if (charCount == 3) {
-                    // lets the format string and the date string be in sync.
-                    dtsPos += charCount;
-                } else if (charCount == 4) {
-                    while (dtsPos < datetime.size() && std::isalpha(datetime[dtsPos]))
-                        ++dtsPos;
-                }
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'h' || format[fmtPos] == 'H') {
-                _hour = internal::readIntAndAdvancePos(datetime, dtsPos, 2);
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'm') {
-                _minute = internal::readIntAndAdvancePos(datetime, dtsPos, 2);
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 's') {
-                _second = internal::readIntAndAdvancePos(datetime, dtsPos, 2);
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'f') {
-                std::string subsecondString = datetime.substr(dtsPos, charCount);
-                _subsecond = std::stoi(subsecondString.append(9 - subsecondString.size(), '0'));
-                dtsPos += charCount;
-                fmtPos += charCount - 1; // skip all identical characters except the last.
-            } else if (format[fmtPos] == 'a' || format[fmtPos] == 'A') {
-                if (datetime.substr(dtsPos, 2) == "pm" || datetime.substr(dtsPos, 2) == "PM") {
-                    _hour = (_hour > 12 ? _hour : _hour + 12);
-                    dtsPos += 2;
-                }
-            } else {
-                // not a pattern, skip it in the date string.
-                ++dtsPos;
             }
+            if (format[fmtPos] == 'y') {
+                y = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == '#' || format[fmtPos] == 'E') {
+                sign = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == 'M') {
+                M = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == 'd') {
+                if (count == 3) {
+                    parse(format[fmtPos], count, datetime, dtPos);
+                } else {
+                    d = parse(format[fmtPos], count, datetime, dtPos);
+                }
+            } else if (format[fmtPos] == 'h' || format[fmtPos] == 'H') {
+                h = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == 'a' || format[fmtPos] == 'A') {
+                int clock = parse(format[fmtPos], count, datetime, dtPos);
+                h += clock == -12 && h >= 12 || clock == 12 && h < 12 ? clock : 0;
+            } else if (format[fmtPos] == 'm') {
+                m = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == 's') {
+                s = parse(format[fmtPos], count, datetime, dtPos);
+            } else if (format[fmtPos] == 'f') {
+                f = parse(format[fmtPos], count, datetime, dtPos) * std::pow(10, 9 - count);
+            } else {
+                dtPos += count;
+            }
+            if (dtPos == std::string::npos) {
+                return DateTime();
+            }
+            fmtPos += count - 1;
         }
-
-        return DateTime(Date(_year, _month, _day), Time(_hour, _minute, _second, Nanoseconds(_subsecond)));
+        return DateTime(Date(sign * y, M, d), Time(h, m, s, Nanoseconds(f)));
     }
 
     /// Returns a DateTime object corresponding to the Julian day \p julianDay. See toJulianDay() for information about Julian Days.
@@ -881,6 +839,10 @@ private:
             }
         } else if (flag == 'h') {
             output << hour();
+        } else if (flag == 'H') {
+            int h = hour();
+            output << (h == 0 ? 12 : h > 12 ? h - 12
+                                            : h);
         } else if (flag == 'm') {
             output << minute();
         } else if (flag == 's') {
@@ -893,6 +855,52 @@ private:
             output << (hour() < 12 ? "AM" : "PM");
         }
         return output.str();
+    }
+
+    static int parse(char flag, size_t count, std::string input, size_t& pos)
+    {
+        if (flag == 'y' || (flag == 'M' || flag == 'd' || flag == 'h' || flag == 'H' || flag == 'm' || flag == 's') && count <= 2 || flag == 'f') {
+            if (pos < input.size() && std::isdigit(input[pos])) {
+                return internal::readIntAndAdvancePos(input, pos, flag == 'f' ? count : (flag == 'y' && count == 1 || count == 4 ? 4 : 2));
+            }
+        } else if (flag == '#') {
+            if (pos < input.size() && (input[pos] == '-' || input[pos] == '+')) {
+                return (input[pos++] == '-' ? -1 : 1);
+            }
+        } else if (flag == 'E') {
+            if (pos + 2 < input.size() && input.substr(pos, 3) == "BCE") {
+                pos += 3;
+                return -1;
+            } else if (pos + 1 < input.size() && input.substr(pos, 2) == "CE") {
+                pos += 2;
+                return 1;
+            }
+        } else if ((flag == 'M' || flag == 'd') && count <= 4 && pos + 2 < input.size()) {
+            const auto& line = count == 3 ? input.substr(pos, 3) : input.substr(pos);
+            if (flag == 'M') {
+                const auto& monthNameArray = count == 3 ? internal::getShortMonthNameArray() : internal::getLongMonthNameArray();
+                size_t index = internal::search(monthNameArray, line);
+                if (index < monthNameArray.size()) {
+                    pos += monthNameArray[index].size();
+                    return index + 1;
+                }
+            } else {
+                const auto& weekdayNameArray = count == 3 ? internal::getShortWeekdayNameArray() : internal::getLongWeekdayNameArray();
+                size_t index = internal::search(weekdayNameArray, line);
+                if (index < weekdayNameArray.size()) {
+                    pos += weekdayNameArray[index].size();
+                    return index + 1;
+                }
+            }
+        } else if ((flag == 'a' || flag == 'A') && pos + 1 < input.size()) {
+            if (flag == 'a' && input.substr(pos, 2) == "am" || input.substr(pos, 2) == "AM") {
+                return -12;
+            } else if (flag == 'a' && input.substr(pos, 2) == "pm" || input.substr(pos, 2) == "PM") {
+                return 12;
+            }
+        }
+        pos = std::string::npos;
+        return std::numeric_limits<int>::min();
     }
 
     Date m_date;
